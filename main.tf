@@ -60,7 +60,7 @@ resource "aws_security_group" "main" {
 
   tags       = merge(
     var.tags,
-    { Name = "${var.env}-elasticache" }
+    { Name = "${var.env}-rds" }
   )
 }
 
