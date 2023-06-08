@@ -9,6 +9,7 @@ resource "aws_rds_cluster" "main" {
   preferred_backup_window = var.preferred_backup_window
   db_subnet_group_name    = aws_db_subnet_group.main.name
   skip_final_snapshot     = true
+  vpc_security_group_ids  = [aws_security_group.main.id]
 
   tags       = merge(
     var.tags,
@@ -23,6 +24,7 @@ resource "aws_rds_cluster_instance" "main" {
   instance_class     = var.instance_class
   engine                  = var.engine
   engine_version          = var.engine_version
+
 }
 
 resource "aws_db_subnet_group" "main" {
@@ -35,3 +37,35 @@ resource "aws_db_subnet_group" "main" {
   )
 }
 
+#security group
+resource "aws_security_group" "main" {
+  name        = "${var.env}-rds"
+  description = "${var.env}-rds"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description      = "RDS"
+    from_port        = 3306
+    to_port          = 3306
+    protocol         = "tcp"
+    cidr_blocks      = var.allow_subnets
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  tags       = merge(
+    var.tags,
+    { Name = "${var.env}-elasticache" }
+  )
+}
+
+resource "aws_ssm_parameter" "rds_endpoint" {
+  name  = "${var.env}.rds.endpoint"
+  type  = "String"
+  value = aws_rds_cluster.main.endpoint
+}
